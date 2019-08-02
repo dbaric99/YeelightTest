@@ -39,11 +39,14 @@ namespace LightControl
 
         public static void Menu(Device device)
         {
+            var lightState = FillDeviceProperties(device).Result;
             bool success;
             int result;
             do
-            {
+            {                
                 Console.WriteLine($"1. Turn on\n2. Turn off\n 3. Change brightness\n");
+                Console.WriteLine($"Device name: {lightState.DeviceName} | Power: {lightState.IsTurnOn} | Color: {lightState.Color} | Brightness: {lightState.BrightnessLevel}");
+
                 success = int.TryParse(Console.ReadLine(), out result);
             }
             while (!success || result < 1 || result > 3);
@@ -92,6 +95,24 @@ namespace LightControl
                 return;
             }
             await device.SetBrightness(brightness);
+        }
+
+        public static async Task<LightState> FillDeviceProperties(Device lightBulb)
+        {
+            var lightState = new LightState();
+
+            if (!(lightBulb is IDeviceReader deviceReader)) return lightState;
+            var power = (await deviceReader.GetProp(PROPERTIES.power)).ToString();
+            if (power == "yes") lightState.IsTurnOn = true;
+            else lightState.IsTurnOn = false;
+
+            lightState.Color = (await deviceReader.GetProp(PROPERTIES.rgb)).ToString();
+
+            lightState.DeviceName = lightBulb.Hostname;
+
+            lightState.BrightnessLevel = int.Parse((await deviceReader.GetProp(PROPERTIES.bright)).ToString());
+
+            return lightState;
         }
     }
 }
